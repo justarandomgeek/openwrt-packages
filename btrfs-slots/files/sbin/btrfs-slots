@@ -21,6 +21,7 @@ export INSTALL=0
 export REBOOT=0
 export SET_DEFAULT=0
 export SET_NEXT=0
+export DELETE=0
 export STATUS=0
 export HELP=0
 
@@ -29,6 +30,7 @@ while [ -n "$1" ]; do
     case "$1" in
         --install) export INSTALL=1 ROOTFS="$2"; shift;;
         --id) export ID="$2"; shift;;
+        --delete) export DELETE=1 NEED_ID=1;;
         -r|--reboot) export SET_NEXT=1 REBOOT=1 NEED_ID=1;;
         -d|--set-default) export SET_DEFAULT=1 NEED_ID=1;;
         -n|--set-next) export SET_NEXT=1 NEED_ID=1;;
@@ -51,11 +53,12 @@ done
 cat <<EOF
     --install <rootfs.tar.gz>   new rootfs.tar.gz to install
     --id <tag>                  slot id, defaults to a date/time stamp for install
-    -r, --reboot                    reboot to newly installed slot or slot specified by --id
-    -d, --set-default               set selected slot to become default after a successful boot
-    -n, --set-next                  set selected slot to be used on next boot
-    -s, --status                    report currently loaded and default slots
-    -h, --help                      print this message
+    --delete                    delete slot selected by --id
+    -r, --reboot                reboot to newly installed slot or slot specified by --id
+    -d, --set-default           set selected slot to become default after a successful boot
+    -n, --set-next              set selected slot to be used on next boot
+    -s, --status                report currently loaded and default slots
+    -h, --help                  print this message
 EOF
 exit 1
 }
@@ -87,6 +90,18 @@ if [ $STATUS -gt 0 ];  then
     fi
 fi
 
+if [ $DELETE -gt 0 ];  then
+    if [ "$ID" = "$CURRENT" -o "$ID" = "$DEFAULT" ]; then
+        echo "Cannot delete current or default slot"
+        exit 1
+    fi
+    
+    newslots=$(echo "$SLOTS" | sed "s/$ID[[:space:]]*//")
+    grub-editenv /efi/EFI/openwrt/grubenv set slots="$newslots"
+    btrfs subvolume delete /mnt/rootfs/@openwrt.$ID
+    btrfs subvolume delete /mnt/rootfs/@openwrt.$ID.factory
+    exit 0
+fi
 
 if [ $INSTALL -gt 0 ];  then
     # create a new subvol, unpack into it, and capture its factory state

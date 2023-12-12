@@ -16,7 +16,7 @@ define Package/$(PKG_NAME)
   CATEGORY:=Utilities
   TITLE:=BTRFS Subvol mounting and upgrade utils
   URL:=https://github.com/justarandomgeek/
-  DEPENDS+= +btrfs-progs +grub2-editenv +grub2-efi +mount-utils
+  DEPENDS+= +btrfs-progs +grub2-editenv +grub2-efi +mount-utils +coreutils +coreutils-readlink
 endef
 
 define Build/Compile
